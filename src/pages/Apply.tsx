@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 const Apply = () => {
   const [files, setFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState("");
@@ -32,10 +34,19 @@ const Apply = () => {
     onDrop: (acceptedFiles) => {
       console.log("Files dropped:", acceptedFiles);
       setFiles(acceptedFiles);
-      toast({
-        title: "Files uploaded successfully",
-        description: `${acceptedFiles.length} file(s) added`,
-      });
+      // Simulate upload progress
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        setUploadProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+          toast({
+            title: "Files uploaded successfully",
+            description: `${acceptedFiles.length} file(s) added`,
+          });
+        }
+      }, 200);
     },
   });
 
@@ -90,9 +101,6 @@ const Apply = () => {
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
               Application Form
             </h1>
-            <p className="text-gray-600">
-              Take the first step towards your future in technology
-            </p>
           </div>
 
           <AnimatePresence>
@@ -167,10 +175,13 @@ const Apply = () => {
                         : "Drag and drop your CV and certificates here, or click to select files"}
                     </p>
                     {files.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-500">
-                          {files.length} file(s) selected
-                        </p>
+                      <div className="mt-4 space-y-4">
+                        {files.map((file, index) => (
+                          <div key={index} className="space-y-2">
+                            <p className="text-sm text-gray-500">{file.name}</p>
+                            <Progress value={uploadProgress} className="h-2" />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
