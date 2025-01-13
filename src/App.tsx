@@ -15,6 +15,7 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Apply />} />
+        <Route path="*" element={<Apply />} /> {/* Add catch-all route */}
       </Routes>
     </AnimatePresence>
   );
@@ -23,9 +24,9 @@ const AnimatedRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
+        <Toaster />
+        <Sonner />
         <AnimatedRoutes />
       </BrowserRouter>
     </TooltipProvider>
