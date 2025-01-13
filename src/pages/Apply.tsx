@@ -12,7 +12,14 @@ const Apply = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState("");
   const { toast } = useToast();
+
+  const generateReferenceNumber = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return `IGODA-${timestamp}-${random}`;
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -36,6 +43,16 @@ const Apply = () => {
     e.preventDefault();
     setIsSubmitting(true);
     console.log("Form submitted");
+
+    const newReferenceNumber = generateReferenceNumber();
+    setReferenceNumber(newReferenceNumber);
+
+    // Simulate sending email
+    const formData = new FormData(e.target as HTMLFormElement);
+    const emailSubject = `Program Application - ${newReferenceNumber}`;
+    console.log("Email would be sent to admin@igodaincubator.co.za");
+    console.log("Subject:", emailSubject);
+    console.log("Form data:", Object.fromEntries(formData));
 
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -91,6 +108,7 @@ const Apply = () => {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
+                    name="name"
                     required
                     className="w-full"
                     placeholder="Enter your full name"
@@ -101,6 +119,7 @@ const Apply = () => {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     required
                     className="w-full"
@@ -112,6 +131,7 @@ const Apply = () => {
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input
                     id="phone"
+                    name="phone"
                     type="tel"
                     required
                     className="w-full"
@@ -120,12 +140,13 @@ const Apply = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="motivation">Why do you want to join?</Label>
+                  <Label htmlFor="goal">Main Goal of Joining</Label>
                   <Textarea
-                    id="motivation"
+                    id="goal"
+                    name="goal"
                     required
                     className="w-full min-h-[100px]"
-                    placeholder="Tell us about your motivation"
+                    placeholder="Tell us about your main goal of joining our program"
                   />
                 </div>
 
@@ -196,10 +217,17 @@ const Apply = () => {
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">
                   Application Submitted!
                 </h2>
-                <p className="text-gray-600 mb-8">
+                <p className="text-gray-600 mb-4">
                   Thank you for applying. We will review your application and get
                   back to you soon.
                 </p>
+                <div className="bg-gray-50 p-4 rounded-lg mb-8">
+                  <p className="text-sm text-gray-600 mb-2">Your Reference Number:</p>
+                  <p className="text-xl font-bold text-indigo-600">{referenceNumber}</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Share this reference number with friends or family who might be interested!
+                  </p>
+                </div>
                 <Button
                   onClick={() => setShowSuccess(false)}
                   variant="outline"
