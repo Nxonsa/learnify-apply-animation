@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import Apply from "./pages/Apply";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -15,7 +16,7 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Apply />} />
-        <Route path="*" element={<Apply />} /> {/* Add catch-all route */}
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </AnimatePresence>
   );
