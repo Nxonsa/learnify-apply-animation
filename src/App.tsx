@@ -1,37 +1,25 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
-import Apply from "./pages/Apply";
-import AdminDashboard from "./pages/AdminDashboard";
+import { Toaster } from "@/components/ui/toaster";
+import Index from "@/pages/Index";
+import Apply from "@/pages/Apply";
+import AdminDashboard from "@/pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
-const AnimatedRoutes = () => {
-  const location = useLocation();
-  
+function App() {
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Apply />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-      </Routes>
-    </AnimatePresence>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/apply" element={<Apply />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Routes>
+      </Router>
+      <Toaster />
+    </QueryClientProvider>
   );
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <Toaster />
-        <Sonner />
-        <AnimatedRoutes />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+}
 
 export default App;

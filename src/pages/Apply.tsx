@@ -7,11 +7,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight } from "lucide-react";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
@@ -21,14 +18,10 @@ const formSchema = z.object({
     required_error: "Please select a program duration",
   }),
   goal: z.string().min(10, "Please provide more detail about your goals"),
-  acceptTerms: z.boolean().refine((val) => val === true, {
-    message: "You must accept the terms and conditions",
-  }),
 });
 
-export default function Apply() {
+const Apply = () => {
   const [searchParams] = useSearchParams();
-  const referralCode = searchParams.get("ref");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -38,38 +31,39 @@ export default function Apply() {
       fullName: "",
       email: "",
       phone: "",
-      programType: "1year",
+      programType: "3months",
       goal: "",
-      acceptTerms: false,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const { error } = await supabase.from("applications").insert([
-      {
+    const referralCode = searchParams.get("ref");
+    
+    try {
+      const { error } = await supabase.from("applications").insert({
         full_name: values.fullName,
         email: values.email,
         phone: values.phone,
         program_type: values.programType,
         goal: values.goal,
-        referral_code: referralCode,
-      },
-    ]);
+        referral_code: referralCode || null,
+      });
 
-    if (error) {
+      if (error) throw error;
+
+      toast({
+        title: "Application submitted successfully!",
+        description: "We will contact you soon.",
+      });
+
+      navigate("/");
+    } catch (error) {
       console.error("Error submitting application:", error);
       toast({
-        title: "Error",
-        description: "There was an error submitting your application. Please try again.",
-        duration: 3000,
+        title: "Error submitting application",
+        description: "Please try again later.",
+        variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Success!",
-        description: "Your application has been submitted successfully.",
-        duration: 3000,
-      });
-      navigate("/");
     }
   };
 
@@ -77,29 +71,28 @@ export default function Apply() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
       className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8"
     >
       <div className="max-w-2xl mx-auto">
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          initial={{ y: -20 }}
+          animate={{ y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Application Form</h1>
-          <p className="text-lg text-gray-600 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            Application Form
+          </h1>
+          <p className="text-lg text-gray-600">
             We will guide you step by step to get your share in an industry worth over{" "}
-            <span className="font-bold">R211.15 Billion</span>
+            <span className="font-bold">R211.15 Billion</span>{" "}
+            <span className="text-sm">Source: DHL Group</span>
           </p>
-          <p className="text-sm text-gray-500">Source: DHL Group</p>
         </motion.div>
 
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white shadow-lg rounded-lg p-6 md:p-8"
+          className="bg-white p-8 rounded-lg shadow-lg"
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -110,7 +103,7 @@ export default function Apply() {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your full name" {...field} />
+                      <Input placeholder="John Doe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -122,9 +115,9 @@ export default function Apply() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter your email" {...field} />
+                      <Input type="email" placeholder="john@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -138,7 +131,7 @@ export default function Apply() {
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your phone number" {...field} />
+                      <Input placeholder="+27 12 345 6789" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -149,33 +142,17 @@ export default function Apply() {
                 control={form.control}
                 name="programType"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Select Program Duration</FormLabel>
+                  <FormItem>
+                    <FormLabel>Program Duration</FormLabel>
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-1"
+                      <select
+                        {...field}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="3months" />
-                          </FormControl>
-                          <FormLabel className="font-normal">3 Months Program</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="6months" />
-                          </FormControl>
-                          <FormLabel className="font-normal">6 Months Program</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="1year" />
-                          </FormControl>
-                          <FormLabel className="font-normal">1 Year Program</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
+                        <option value="3months">3 Months Program</option>
+                        <option value="6months">6 Months Program</option>
+                        <option value="1year">1 Year Program</option>
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -200,69 +177,18 @@ export default function Apply() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="acceptTerms"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <div className="flex items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          I accept the terms and conditions, including the no-refund policy
-                        </FormLabel>
-                        <motion.p 
-                          className="text-sm text-gray-500"
-                          whileHover={{ x: 5 }}
-                          transition={{ type: "spring", stiffness: 300 }}
-                        >
-                          <a
-                            href="/terms"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center text-primary hover:underline"
-                          >
-                            Read more <ArrowRight className="ml-1 h-4 w-4" />
-                          </a>
-                        </motion.p>
-                      </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <Button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary/90"
               >
-                <Button
-                  type="submit"
-                  className="w-full bg-primary hover:bg-primary/90"
-                >
-                  Submit Application
-                </Button>
-              </motion.div>
+                Submit Application
+              </Button>
             </form>
           </Form>
         </motion.div>
-
-        {referralCode && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-4 text-center text-sm text-gray-500"
-          >
-            Referral Code Applied: {referralCode}
-          </motion.p>
-        )}
       </div>
     </motion.div>
   );
-}
+};
+
+export default Apply;

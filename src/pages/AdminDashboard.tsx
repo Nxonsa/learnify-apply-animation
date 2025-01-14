@@ -1,18 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 
-export default function AdminDashboard() {
+const AdminDashboard = () => {
   const { data: applications, isLoading } = useQuery({
     queryKey: ["applications"],
     queryFn: async () => {
@@ -21,107 +14,80 @@ export default function AdminDashboard() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching applications:", error);
-        throw error;
-      }
-
+      if (error) throw error;
       return data;
     },
   });
 
-  const openDocument = (url: string) => {
-    window.open(url, "_blank");
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-500";
+      case "approved":
+        return "bg-green-500";
+      case "rejected":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
   };
 
+  if (isLoading) {
+    return <div className="p-8">Loading applications...</div>;
+  }
+
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8"
+      className="p-8"
     >
-      <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold text-gray-900">Applications Dashboard</h1>
-          <p className="text-gray-600 mt-2">Manage and review all applications</p>
-        </motion.div>
-
-        {isLoading ? (
-          <div className="text-center py-8">Loading applications...</div>
-        ) : (
+      <h1 className="text-3xl font-bold mb-6">Applications Dashboard</h1>
+      <div className="grid gap-6">
+        {applications?.map((app) => (
           <motion.div
+            key={app.id}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-lg shadow-lg overflow-hidden"
+            className="bg-white p-6 rounded-lg shadow-md"
           >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Full Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Program</TableHead>
-                  <TableHead>Goal</TableHead>
-                  <TableHead>Documents</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {applications?.map((app) => (
-                  <TableRow key={app.id}>
-                    <TableCell className="font-medium">{app.full_name}</TableCell>
-                    <TableCell>{app.email}</TableCell>
-                    <TableCell>{app.phone}</TableCell>
-                    <TableCell>{app.program_type}</TableCell>
-                    <TableCell className="max-w-xs truncate">{app.goal}</TableCell>
-                    <TableCell>
-                      {app.documents_urls && app.documents_urls.length > 0 ? (
-                        <div className="flex gap-2">
-                          {app.documents_urls.map((url, index) => (
-                            <Button
-                              key={index}
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openDocument(url)}
-                            >
-                              <FileText className="h-4 w-4 mr-1" />
-                              Doc {index + 1}
-                            </Button>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">No documents</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-sm ${
-                        app.status === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : app.status === 'approved'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {app.status || 'pending'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(app.created_at || '').toLocaleDateString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-xl font-semibold">{app.full_name}</h2>
+                <p className="text-gray-600">{app.email}</p>
+              </div>
+              <Badge className={getStatusColor(app.status)}>{app.status}</Badge>
+            </div>
+            <div className="grid gap-2">
+              <p><strong>Phone:</strong> {app.phone}</p>
+              <p><strong>Program Type:</strong> {app.program_type}</p>
+              <p><strong>Goal:</strong> {app.goal}</p>
+              {app.referral_code && (
+                <p><strong>Referral Code:</strong> {app.referral_code}</p>
+              )}
+              {app.documents_urls && app.documents_urls.length > 0 && (
+                <div className="mt-4">
+                  <p className="font-semibold mb-2">Documents:</p>
+                  <div className="flex gap-2">
+                    {app.documents_urls.map((url: string, index: number) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        onClick={() => window.open(url, '_blank')}
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Document {index + 1}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </motion.div>
-        )}
+        ))}
       </div>
     </motion.div>
   );
-}
+};
+
+export default AdminDashboard;
