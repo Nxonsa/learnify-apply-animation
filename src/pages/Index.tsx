@@ -2,8 +2,38 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
+  const [referralCode, setReferralCode] = useState("");
+  const { toast } = useToast();
+
+  const handleReferralCodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const code = e.target.value;
+    setReferralCode(code);
+    
+    if (code) {
+      const { data, error } = await supabase
+        .from("referral_codes")
+        .select("code")
+        .eq("code", code)
+        .single();
+
+      if (error) {
+        console.error("Error checking referral code:", error);
+      } else if (data) {
+        toast({
+          title: "Valid referral code!",
+          description: "Your referral code has been validated.",
+          duration: 3000,
+        });
+      }
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -29,15 +59,32 @@ const Index = () => {
           <p className="text-xl text-gray-600 mb-8">
             Empowering the next generation of innovators
           </p>
+          
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="max-w-md mx-auto mb-8"
           >
-            <Link to="/apply">
-              <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg text-lg shadow-lg transition-all duration-300">
-                Apply Now
-              </Button>
-            </Link>
+            <div className="space-y-4">
+              <Input
+                type="text"
+                placeholder="Enter referral code (optional)"
+                value={referralCode}
+                onChange={handleReferralCodeChange}
+                className="w-full"
+              />
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link to={`/apply${referralCode ? `?ref=${referralCode}` : ''}`}>
+                  <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg text-lg shadow-lg transition-all duration-300">
+                    Apply Now
+                  </Button>
+                </Link>
+              </motion.div>
+            </div>
           </motion.div>
         </motion.div>
 

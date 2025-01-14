@@ -9,6 +9,56 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      applications: {
+        Row: {
+          created_at: string | null
+          documents_urls: string[] | null
+          email: string
+          full_name: string
+          goal: string
+          id: string
+          phone: string
+          program_type: string
+          referral_code: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          documents_urls?: string[] | null
+          email: string
+          full_name: string
+          goal: string
+          id?: string
+          phone: string
+          program_type: string
+          referral_code?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          documents_urls?: string[] | null
+          email?: string
+          full_name?: string
+          goal?: string
+          id?: string
+          phone?: string
+          program_type?: string
+          referral_code?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_referral_code_fkey"
+            columns: ["referral_code"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -180,6 +230,27 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
         }
         Relationships: []
       }
