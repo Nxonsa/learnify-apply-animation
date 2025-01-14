@@ -21,8 +21,8 @@ const formSchema = z.object({
     required_error: "Please select a program duration",
   }),
   goal: z.string().min(10, "Please provide more detail about your goals"),
-  acceptTerms: z.literal(true, {
-    errorMap: () => ({ message: "You must accept the terms and conditions" }),
+  acceptTerms: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions",
   }),
 });
 
