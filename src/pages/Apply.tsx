@@ -1,257 +1,268 @@
-import { useState } from "react";
-import { useDropzone } from "react-dropzone";
-import { motion, AnimatePresence } from "framer-motion";
-import confetti from "canvas-confetti";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { motion } from "framer-motion";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
-import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowRight } from "lucide-react";
 
-const Apply = () => {
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [referenceNumber, setReferenceNumber] = useState("");
+const formSchema = z.object({
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  programType: z.enum(["3months", "6months", "1year"], {
+    required_error: "Please select a program duration",
+  }),
+  goal: z.string().min(10, "Please provide more detail about your goals"),
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the terms and conditions" }),
+  }),
+});
+
+export default function Apply() {
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get("ref");
+  const navigate = useNavigate();
   const { toast } = useToast();
 
-  const generateReferenceNumber = () => {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000);
-    return `IGODA-${timestamp}-${random}`;
-  };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
-        ".docx",
-      ],
-    },
-    onDrop: (acceptedFiles) => {
-      console.log("Files dropped:", acceptedFiles);
-      setFiles(acceptedFiles);
-      // Simulate upload progress
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        setUploadProgress(progress);
-        if (progress >= 100) {
-          clearInterval(interval);
-          toast({
-            title: "Files uploaded successfully",
-            description: `${acceptedFiles.length} file(s) added`,
-          });
-        }
-      }, 200);
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      programType: "1year",
+      goal: "",
+      acceptTerms: false,
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    console.log("Form submitted");
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const { error } = await supabase.from("applications").insert([
+      {
+        full_name: values.fullName,
+        email: values.email,
+        phone: values.phone,
+        program_type: values.programType,
+        goal: values.goal,
+        referral_code: referralCode,
+      },
+    ]);
 
-    const newReferenceNumber = generateReferenceNumber();
-    setReferenceNumber(newReferenceNumber);
-
-    // Simulate sending email
-    const formData = new FormData(e.target as HTMLFormElement);
-    const emailSubject = `Program Application - ${newReferenceNumber}`;
-    console.log("Email would be sent to admin@igodaincubator.co.za");
-    console.log("Subject:", emailSubject);
-    console.log("Form data:", Object.fromEntries(formData));
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    setIsSubmitting(false);
-    setShowSuccess(true);
-    
-    // Trigger confetti
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    });
+    if (error) {
+      console.error("Error submitting application:", error);
+      toast({
+        title: "Error",
+        description: "There was an error submitting your application. Please try again.",
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: "Success!",
+        description: "Your application has been submitted successfully.",
+        duration: 3000,
+      });
+      navigate("/");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8"
+    >
+      <div className="max-w-2xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-center mb-8"
         >
-          <div className="text-center mb-8">
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <span className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-indigo-50 text-indigo-700 mb-4">
-                Join Our Program
-              </span>
-            </motion.div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Application Form
-            </h1>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Application Form</h1>
+          <p className="text-lg text-gray-600 mb-2">
+            We will guide you step by step to get your share in an industry worth over{" "}
+            <span className="font-bold">R211.15 Billion</span>
+          </p>
+          <p className="text-sm text-gray-500">Source: DHL Group</p>
+        </motion.div>
 
-          <AnimatePresence>
-            {!showSuccess ? (
-              <motion.form
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onSubmit={handleSubmit}
-                className="space-y-6"
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    required
-                    className="w-full"
-                    placeholder="Enter your full name"
-                  />
-                </div>
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white shadow-lg rounded-lg p-6 md:p-8"
+        >
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your full name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    className="w-full"
-                    placeholder="Enter your email"
-                  />
-                </div>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Enter your email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    required
-                    className="w-full"
-                    placeholder="Enter your phone number"
-                  />
-                </div>
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <div className="space-y-2">
-                  <Label htmlFor="goal">Main Goal of Joining</Label>
-                  <Textarea
-                    id="goal"
-                    name="goal"
-                    required
-                    className="w-full min-h-[100px]"
-                    placeholder="Tell us about your main goal of joining our program"
-                  />
-                </div>
+              <FormField
+                control={form.control}
+                name="programType"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Select Program Duration</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="3months" />
+                          </FormControl>
+                          <FormLabel className="font-normal">3 Months Program</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="6months" />
+                          </FormControl>
+                          <FormLabel className="font-normal">6 Months Program</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="1year" />
+                          </FormControl>
+                          <FormLabel className="font-normal">1 Year Program</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <div className="space-y-2">
-                  <Label>Upload Documents</Label>
-                  <div
-                    {...getRootProps()}
-                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                      isDragActive
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-gray-300 hover:border-gray-400"
-                    }`}
-                  >
-                    <input {...getInputProps()} />
-                    <p className="text-gray-600">
-                      {isDragActive
-                        ? "Drop the files here"
-                        : "Drag and drop your CV and certificates here, or click to select files"}
-                    </p>
-                    {files.length > 0 && (
-                      <div className="mt-4 space-y-4">
-                        {files.map((file, index) => (
-                          <div key={index} className="space-y-2">
-                            <p className="text-sm text-gray-500">{file.name}</p>
-                            <Progress value={uploadProgress} className="h-2" />
-                          </div>
-                        ))}
+              <FormField
+                control={form.control}
+                name="goal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>What do you want to achieve?</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Tell us about your goals and aspirations..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="acceptTerms"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <div className="flex items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          I accept the terms and conditions, including the no-refund policy
+                        </FormLabel>
+                        <motion.p 
+                          className="text-sm text-gray-500"
+                          whileHover={{ x: 5 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                        >
+                          <a
+                            href="/terms"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center text-primary hover:underline"
+                          >
+                            Read more <ArrowRight className="ml-1 h-4 w-4" />
+                          </a>
+                        </motion.p>
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
                 <Button
                   type="submit"
-                  className="w-full"
-                  disabled={isSubmitting}
+                  className="w-full bg-primary hover:bg-primary/90"
                 >
-                  {isSubmitting ? "Submitting..." : "Submit Application"}
-                </Button>
-              </motion.form>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-12"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 20,
-                  }}
-                  className="w-24 h-24 bg-green-100 rounded-full mx-auto mb-6 flex items-center justify-center"
-                >
-                  <svg
-                    className="w-12 h-12 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </motion.div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                  Application Submitted!
-                </h2>
-                <p className="text-gray-600 mb-4">
-                  Thank you for applying. We will review your application and get
-                  back to you soon.
-                </p>
-                <div className="bg-gray-50 p-4 rounded-lg mb-8">
-                  <p className="text-sm text-gray-600 mb-2">Your Reference Number:</p>
-                  <p className="text-xl font-bold text-indigo-600">{referenceNumber}</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Share this reference number with friends or family who might be interested!
-                  </p>
-                </div>
-                <Button
-                  onClick={() => setShowSuccess(false)}
-                  variant="outline"
-                >
-                  Submit Another Application
+                  Submit Application
                 </Button>
               </motion.div>
-            )}
-          </AnimatePresence>
+            </form>
+          </Form>
         </motion.div>
-      </div>
-    </div>
-  );
-};
 
-export default Apply;
+        {referralCode && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-4 text-center text-sm text-gray-500"
+          >
+            Referral Code Applied: {referralCode}
+          </motion.p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
